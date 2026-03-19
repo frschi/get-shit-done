@@ -234,7 +234,7 @@ Synthesis is complete when:
 - [ ] Confidence assessed honestly
 - [ ] Gaps identified for later attention
 - [ ] SUMMARY.md follows template format
-- [ ] File committed to git
+- [ ] File committed
 - [ ] Structured return provided to orchestrator
 
 Quality indicators:

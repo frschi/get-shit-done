@@ -21,7 +21,7 @@ Add this entry to `.planning/MILESTONES.md` when completing a milestone:
 - [Z] phases, [N] plans, [M] tasks
 - [D] days from start to ship (or milestone to milestone)
 
-**Git range:** `feat(XX-XX)` → `feat(YY-YY)`
+**Commit range:** `feat(XX-XX)` → `feat(YY-YY)`
 
 **What's next:** [Brief description of next milestone goals, or "Project complete"]
 
@@ -51,12 +51,12 @@ If MILESTONES.md doesn't exist, create it with header:
 - Minor bug fixes that don't constitute a release
 
 **Stats to include:**
-- Count modified files: `git diff --stat feat(XX-XX)..feat(YY-YY) | tail -1`
+- Count modified files: `jj diff --stat -r 'description(glob:"feat(XX-XX)*")::description(glob:"feat(YY-YY)*")' | tail -1`
 - Count LOC: `find . -name "*.swift" -o -name "*.ts" | xargs wc -l` (or relevant extension)
 - Phase/plan/task counts from ROADMAP
 - Timeline from first phase commit to last phase commit
 
-**Git range format:**
+**Commit range format:**
 - First commit of milestone → last commit of milestone
 - Example: `feat(01-01)` → `feat(04-01)` for phases 1-4
 </guidelines>
@@ -83,7 +83,7 @@ If MILESTONES.md doesn't exist, create it with header:
 - 2 phases, 3 plans, 12 tasks
 - 8 days from v1.0 to v1.1
 
-**Git range:** `feat(05-01)` → `feat(06-02)`
+**Commit range:** `feat(05-01)` → `feat(06-02)`
 
 **What's next:** v2.0 SwiftUI redesign with widget support
 
@@ -108,7 +108,7 @@ If MILESTONES.md doesn't exist, create it with header:
 - 4 phases, 7 plans, 28 tasks
 - 12 days from start to ship
 
-**Git range:** `feat(01-01)` → `feat(04-01)`
+**Commit range:** `feat(01-01)` → `feat(04-01)`
 
 **What's next:** Security audit and hardening for v1.1
 ```

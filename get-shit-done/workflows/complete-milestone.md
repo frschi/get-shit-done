@@ -1,6 +1,6 @@
 <purpose>
 
-Mark a shipped version (v1.0, v1.1, v2.0) as complete. Creates historical record in MILESTONES.md, performs full PROJECT.md evolution review, reorganizes ROADMAP.md with milestone groupings, and tags the release in git.
+Mark a shipped version (v1.0, v1.1, v2.0) as complete. Creates historical record in MILESTONES.md, performs full PROJECT.md evolution review, and reorganizes ROADMAP.md with milestone groupings.
 
 </purpose>
 
@@ -127,11 +127,11 @@ Wait for confirmation.
 Calculate milestone statistics:
 
 ```bash
-git log --oneline --grep="feat(" | head -20
-git diff --stat FIRST_COMMIT..LAST_COMMIT | tail -1
+jj log --no-graph -r 'description(glob:"*feat(*")'
+jj diff --from FIRST_COMMIT --to LAST_COMMIT --stat
 find . -name "*.swift" -o -name "*.ts" -o -name "*.py" | xargs wc -l 2>/dev/null
-git log --format="%ai" FIRST_COMMIT | tail -1
-git log --format="%ai" LAST_COMMIT | head -1
+jj log -r FIRST_COMMIT --no-graph -T 'committer.timestamp()'
+jj log -r LAST_COMMIT --no-graph -T 'committer.timestamp()'
 ```
 
 Present:
@@ -144,7 +144,7 @@ Milestone Stats:
 - Files modified: [M]
 - Lines of code: [LOC] [language]
 - Timeline: [Days] days ([Start] → [End])
-- Git range: feat(XX-XX) → feat(YY-YY)
+- Change range: feat(XX-XX) → feat(YY-YY)
 ```
 
 </step>
@@ -177,7 +177,7 @@ Key accomplishments for this milestone:
 
 **Note:** MILESTONES.md entry is now created automatically by `gsd-tools milestone complete` in the archive_milestone step. The entry includes version, date, phase/plan/task counts, and accomplishments extracted from SUMMARY.md files.
 
-If additional details are needed (e.g., user-provided "Delivered" summary, git range, LOC stats), add them manually after the CLI creates the base entry.
+If additional details are needed (e.g., user-provided "Delivered" summary, change range, LOC stats), add them manually after the CLI creates the base entry.
 
 </step>
 
@@ -458,7 +458,7 @@ ls .planning/RETROSPECTIVE.md 2>/dev/null
 1. From SUMMARY.md files: Extract key deliverables, one-liners, tech decisions
 2. From VERIFICATION.md files: Extract verification scores, gaps found
 3. From UAT.md files: Extract test results, issues found
-4. From git log: Count commits, calculate timeline
+4. From jj log: Count commits, calculate timeline
 5. From the milestone work: Reflect on what worked and what didn't
 
 **Write the milestone section:**
@@ -536,141 +536,106 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 Extract `branching_strategy`, `phase_branch_template`, `milestone_branch_template`, and `commit_docs` from init JSON.
 
-**If "none":** Skip to git_tag.
+**If "none":** Skip to git_commit_milestone.
 
 **For "phase" strategy:**
 
 ```bash
 BRANCH_PREFIX=$(echo "$PHASE_BRANCH_TEMPLATE" | sed 's/{.*//')
-PHASE_BRANCHES=$(git branch --list "${BRANCH_PREFIX}*" 2>/dev/null | sed 's/^\*//' | tr -d ' ')
+PHASE_BOOKMARKS=$(jj bookmark list --glob "${BRANCH_PREFIX}*" 2>/dev/null)
 ```
 
 **For "milestone" strategy:**
 
 ```bash
 BRANCH_PREFIX=$(echo "$MILESTONE_BRANCH_TEMPLATE" | sed 's/{.*//')
-MILESTONE_BRANCH=$(git branch --list "${BRANCH_PREFIX}*" 2>/dev/null | sed 's/^\*//' | tr -d ' ' | head -1)
+MILESTONE_BOOKMARK=$(jj bookmark list --glob "${BRANCH_PREFIX}*" 2>/dev/null | head -1)
 ```
 
-**If no branches found:** Skip to git_tag.
+**If no bookmarks found:** Skip to git_commit_milestone.
 
-**If branches exist:**
+**If bookmarks exist:**
 
 ```
-## Git Branches Detected
+## Bookmarks Detected
 
 Branching strategy: {phase/milestone}
-Branches: {list}
+Bookmarks: {list}
 
 Options:
-1. **Merge to main** — Merge branch(es) to main
-2. **Delete without merging** — Already merged or not needed
-3. **Keep branches** — Leave for manual handling
+1. **Squash to main** — Squash bookmark(s) to main
+2. **Merge with history** — Create merge change(s) to main
+3. **Delete without merging** — Already merged or not needed
+4. **Keep bookmarks** — Leave for manual handling
 ```
 
-AskUserQuestion with options: Squash merge (Recommended), Merge with history, Delete without merging, Keep branches.
+AskUserQuestion with options: Squash merge (Recommended), Merge with history, Delete without merging, Keep bookmarks.
 
 **Squash merge:**
 
 ```bash
-CURRENT_BRANCH=$(git branch --show-current)
-git checkout main
-
 if [ "$BRANCHING_STRATEGY" = "phase" ]; then
-  for branch in $PHASE_BRANCHES; do
-    git merge --squash "$branch"
-    # Strip .planning/ from staging if commit_docs is false
+  for bookmark in $PHASE_BOOKMARKS; do
+    jj new main
+    jj squash --from "$bookmark"
+    # Remove .planning/ files if commit_docs is false
     if [ "$COMMIT_DOCS" = "false" ]; then
-      git reset HEAD .planning/ 2>/dev/null || true
+      rm -rf .planning/ 2>/dev/null || true
     fi
-    git commit -m "feat: $branch for v[X.Y]"
+    jj commit -m "feat: $bookmark for v[X.Y]"
   done
 fi
 
 if [ "$BRANCHING_STRATEGY" = "milestone" ]; then
-  git merge --squash "$MILESTONE_BRANCH"
-  # Strip .planning/ from staging if commit_docs is false
+  jj new main
+  jj squash --from "$MILESTONE_BOOKMARK"
+  # Remove .planning/ files if commit_docs is false
   if [ "$COMMIT_DOCS" = "false" ]; then
-    git reset HEAD .planning/ 2>/dev/null || true
+    rm -rf .planning/ 2>/dev/null || true
   fi
-  git commit -m "feat: $MILESTONE_BRANCH for v[X.Y]"
+  jj commit -m "feat: $MILESTONE_BOOKMARK for v[X.Y]"
 fi
-
-git checkout "$CURRENT_BRANCH"
 ```
 
 **Merge with history:**
 
 ```bash
-CURRENT_BRANCH=$(git branch --show-current)
-git checkout main
-
 if [ "$BRANCHING_STRATEGY" = "phase" ]; then
-  for branch in $PHASE_BRANCHES; do
-    git merge --no-ff --no-commit "$branch"
-    # Strip .planning/ from staging if commit_docs is false
+  for bookmark in $PHASE_BOOKMARKS; do
+    jj new main "$bookmark"
+    # Remove .planning/ files if commit_docs is false
     if [ "$COMMIT_DOCS" = "false" ]; then
-      git reset HEAD .planning/ 2>/dev/null || true
+      rm -rf .planning/ 2>/dev/null || true
     fi
-    git commit -m "Merge branch '$branch' for v[X.Y]"
+    jj commit -m "Merge bookmark '$bookmark' for v[X.Y]"
   done
 fi
 
 if [ "$BRANCHING_STRATEGY" = "milestone" ]; then
-  git merge --no-ff --no-commit "$MILESTONE_BRANCH"
-  # Strip .planning/ from staging if commit_docs is false
+  jj new main "$MILESTONE_BOOKMARK"
+  # Remove .planning/ files if commit_docs is false
   if [ "$COMMIT_DOCS" = "false" ]; then
-    git reset HEAD .planning/ 2>/dev/null || true
+    rm -rf .planning/ 2>/dev/null || true
   fi
-  git commit -m "Merge branch '$MILESTONE_BRANCH' for v[X.Y]"
+  jj commit -m "Merge bookmark '$MILESTONE_BOOKMARK' for v[X.Y]"
 fi
-
-git checkout "$CURRENT_BRANCH"
 ```
 
 **Delete without merging:**
 
 ```bash
 if [ "$BRANCHING_STRATEGY" = "phase" ]; then
-  for branch in $PHASE_BRANCHES; do
-    git branch -d "$branch" 2>/dev/null || git branch -D "$branch"
+  for bookmark in $PHASE_BOOKMARKS; do
+    jj bookmark delete "$bookmark"
   done
 fi
 
 if [ "$BRANCHING_STRATEGY" = "milestone" ]; then
-  git branch -d "$MILESTONE_BRANCH" 2>/dev/null || git branch -D "$MILESTONE_BRANCH"
+  jj bookmark delete "$MILESTONE_BOOKMARK"
 fi
 ```
 
-**Keep branches:** Report "Branches preserved for manual handling"
-
-</step>
-
-<step name="git_tag">
-
-Create git tag:
-
-```bash
-git tag -a v[X.Y] -m "v[X.Y] [Name]
-
-Delivered: [One sentence]
-
-Key accomplishments:
-- [Item 1]
-- [Item 2]
-- [Item 3]
-
-See .planning/MILESTONES.md for full details."
-```
-
-Confirm: "Tagged: v[X.Y]"
-
-Ask: "Push tag to remote? (y/n)"
-
-If yes:
-```bash
-git push origin v[X.Y]
-```
+**Keep bookmarks:** Report "Bookmarks preserved for manual handling"
 
 </step>
 
@@ -701,7 +666,6 @@ Archived:
 - milestones/v[X.Y]-REQUIREMENTS.md
 
 Summary: .planning/MILESTONES.md
-Tag: v[X.Y]
 
 ---
 
@@ -754,7 +718,6 @@ Milestone completion is successful when:
 - [ ] Requirements archive created (milestones/v[X.Y]-REQUIREMENTS.md)
 - [ ] REQUIREMENTS.md deleted (fresh for next milestone)
 - [ ] STATE.md updated with fresh project reference
-- [ ] Git tag created (v[X.Y])
 - [ ] Milestone commit made (includes archive files and deletion)
 - [ ] Requirements completion checked against REQUIREMENTS.md traceability table
 - [ ] Incomplete requirements surfaced with proceed/audit/abort options

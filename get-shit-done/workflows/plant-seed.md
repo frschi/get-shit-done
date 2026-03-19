@@ -164,6 +164,6 @@ and the milestone scope matches the trigger condition.
 - [ ] Seed file created in .planning/seeds/
 - [ ] Frontmatter includes status, trigger, scope
 - [ ] Breadcrumbs collected from codebase
-- [ ] Committed to git
+- [ ] Committed
 - [ ] User shown confirmation with trigger info
 </success_criteria>

@@ -1289,7 +1289,7 @@ Phase planning complete when:
 - [ ] Each task: Type, Files (if auto), Action, Verify, Done
 - [ ] Checkpoints properly structured
 - [ ] Wave structure maximizes parallelism
-- [ ] PLAN file(s) committed to git
+- [ ] PLAN file(s) committed
 - [ ] User knows next steps and wave structure
 
 ## Gap Closure Mode
@@ -1301,7 +1301,7 @@ Planning complete when:
 - [ ] Plan numbers sequential after existing
 - [ ] PLAN file(s) exist with gap_closure: true
 - [ ] Each plan: tasks derived from gap.missing items
-- [ ] PLAN file(s) committed to git
+- [ ] PLAN file(s) committed
 - [ ] User knows to run `/gsd:execute-phase {X}` next
 
 </success_criteria>

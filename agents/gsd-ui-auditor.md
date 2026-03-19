@@ -20,7 +20,7 @@ Spawned by `/gsd:ui-review` orchestrator.
 If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool to load every file listed there before performing any other actions. This is your primary context.
 
 **Core responsibilities:**
-- Ensure screenshot storage is git-safe before any captures
+- Ensure screenshot storage is safe before any captures
 - Capture screenshots via CLI if dev server is running (code-only audit otherwise)
 - Audit implemented UI against UI-SPEC.md (if exists) or abstract 6-pillar standards
 - Score each pillar 1-4, identify top 3 priority fixes
@@ -60,7 +60,7 @@ If no UI-SPEC exists: audit against abstract 6-pillar standards.
 
 ## Screenshot Storage Safety
 
-**MUST run before any screenshot capture.** Prevents binary files from reaching git history.
+**MUST run before any screenshot capture.** Prevents binary files from reaching VCS history.
 
 ```bash
 # Ensure directory exists
@@ -82,7 +82,7 @@ GITIGNORE
 fi
 ```
 
-This gate runs unconditionally on every audit. The .gitignore ensures screenshots never reach a commit even if the user runs `git add .` before cleanup.
+This gate runs unconditionally on every audit. The .gitignore ensures screenshots never reach a commit.
 
 </gitignore_gate>
 

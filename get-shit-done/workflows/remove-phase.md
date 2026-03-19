@@ -1,5 +1,5 @@
 <purpose>
-Remove an unstarted future phase from the project roadmap, delete its directory, renumber all subsequent phases to maintain a clean linear sequence, and commit the change. The git commit serves as the historical record of removal.
+Remove an unstarted future phase from the project roadmap, delete its directory, renumber all subsequent phases to maintain a clean linear sequence, and commit the change. The commit serves as the historical record of removal.
 </purpose>
 
 <required_reading>
@@ -141,7 +141,7 @@ Would you like to:
 - Don't remove completed phases (have SUMMARY.md files) without --force
 - Don't remove current or past phases
 - Don't manually renumber — use `gsd-tools phase remove` which handles all renumbering
-- Don't add "removed phase" notes to STATE.md — git commit is the record
+- Don't add "removed phase" notes to STATE.md — the commit is the record
 - Don't modify completed phase directories
 </anti_patterns>
 

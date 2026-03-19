@@ -285,7 +285,7 @@ Completed Tasks table gives continuation agent context. Commit hashes verify wor
 <continuation_handling>
 If spawned as continuation agent (`<completed_tasks>` in prompt):
 
-1. Verify previous commits exist: `git log --oneline -5`
+1. Verify previous commits exist: `jj log --limit 5 --no-graph`
 2. DO NOT redo completed tasks
 3. Start from resume point in prompt
 4. Handle based on checkpoint type: after human-action → verify it worked; after human-verify → continue; after decision → implement selected option
@@ -309,15 +309,9 @@ When executing task with `tdd="true"`:
 <task_commit_protocol>
 After each task completes (verification passed, done criteria met), commit immediately.
 
-**1. Check modified files:** `git status --short`
+**1. Check modified files:** `jj status`
 
-**2. Stage task-related files individually** (NEVER `git add .` or `git add -A`):
-```bash
-git add src/api/auth.ts
-git add src/types/user.ts
-```
-
-**3. Commit type:**
+**2. Commit type:**
 
 | Type       | When                                            |
 | ---------- | ----------------------------------------------- |
@@ -327,18 +321,18 @@ git add src/types/user.ts
 | `refactor` | Code cleanup, no behavior change                |
 | `chore`    | Config, tooling, dependencies                   |
 
-**4. Commit:**
+**3. Commit:**
 ```bash
-git commit -m "{type}({phase}-{plan}): {concise task description}
+jj commit -m "{type}({phase}-{plan}): {concise task description}
 
 - {key change 1}
 - {key change 2}
 "
 ```
 
-**5. Record hash:** `TASK_COMMIT=$(git rev-parse --short HEAD)` — track for SUMMARY.
+**4. Record change ID:** `TASK_COMMIT=$(jj log -r @- --no-graph -T 'change_id.short(8)')` — track for SUMMARY.
 
-**6. Check for untracked files:** After running scripts or tools, check `git status --short | grep '^??'`. For any new untracked files: commit if intentional, add to `.gitignore` if generated/runtime output. Never leave generated files untracked.
+**5. Check for unexpected files:** After running scripts or tools, check `jj status` for any unexpected new files. Add generated/runtime output to `.gitignore`. jj auto-tracks all files not in .gitignore.
 </task_commit_protocol>
 
 <summary_creation>
@@ -386,7 +380,7 @@ After writing SUMMARY.md, verify claims before proceeding.
 
 **2. Check commits exist:**
 ```bash
-git log --oneline --all | grep -q "{hash}" && echo "FOUND: {hash}" || echo "MISSING: {hash}"
+jj log --no-graph -r '{hash}' 2>/dev/null && echo "FOUND: {hash}" || echo "MISSING: {hash}"
 ```
 
 **3. Append result to SUMMARY.md:** `## Self-Check: PASSED` or `## Self-Check: FAILED` with missing items listed.

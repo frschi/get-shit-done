@@ -120,14 +120,15 @@ checkpoints between tasks. The user can review, modify, or redirect work at any 
 <step name="handle_branching">
 Check `branching_strategy` from init:
 
-**"none":** Skip, continue on current branch.
+**"none":** Skip, continue on current change.
 
 **"phase" or "milestone":** Use pre-computed `branch_name` from init:
 ```bash
-git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+jj new
+jj bookmark create "$BRANCH_NAME" -r @
 ```
 
-All subsequent commits go to this branch. User handles merging.
+All subsequent commits go to this bookmark. User handles merging.
 </step>
 
 <step name="validate_phase">
@@ -206,11 +207,8 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
        </objective>
 
        <parallel_execution>
-       You are running as a PARALLEL executor agent. Use --no-verify on all git
-       commits to avoid pre-commit hook contention with other agents. The
-       orchestrator validates hooks once after all agents complete.
-       For gsd-tools commits: add --no-verify flag.
-       For direct git commits: use git commit --no-verify -m "..."
+       You are running as a PARALLEL executor agent. jj has no commit hooks,
+       so no special flags are needed. Commit normally with jj commit.
        </parallel_execution>
 
        <execution_context>
@@ -250,21 +248,19 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
 3. **Wait for all agents in wave to complete.**
 
-4. **Post-wave hook validation (parallel mode only):**
+4. **Post-wave validation (parallel mode only):**
 
-   When agents committed with `--no-verify`, run pre-commit hooks once after the wave:
+   If the project has linting/formatting requirements, run the relevant tools once after the wave to validate the combined state:
    ```bash
-   # Run project's pre-commit hooks on the current state
-   git diff --cached --quiet || git stash  # stash any unstaged changes
-   git hook run pre-commit 2>&1 || echo "⚠ Pre-commit hooks failed — review before continuing"
+   # Run project's linter/formatter on the current state if applicable
    ```
-   If hooks fail: report the failure and ask "Fix hook issues now?" or "Continue to next wave?"
+   If validation fails: report the failure and ask "Fix issues now?" or "Continue to next wave?"
 
 5. **Report completion — spot-check claims first:**
 
    For each SUMMARY.md:
    - Verify first 2 files from `key-files.created` exist on disk
-   - Check `git log --oneline --all --grep="{phase}-{plan}"` returns ≥1 commit
+   - Check `jj log --no-graph -r 'all() & description(glob:"*{phase}-{plan}*")'` returns ≥1 commit
    - Check for `## Self-Check: FAILED` marker
 
    If ANY spot-check fails: report which plan failed, route to failure handler — ask "Retry plan?" or "Continue with remaining waves?"
@@ -287,7 +283,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
 5. **Handle failures:**
 
-   **Known Claude Code bug (classifyHandoffIfNeeded):** If an agent reports "failed" with error containing `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a GSD or agent issue. The error fires in the completion handler AFTER all tool calls finish. In this case: run the same spot-checks as step 4 (SUMMARY.md exists, git commits present, no Self-Check: FAILED). If spot-checks PASS → treat as **successful**. If spot-checks FAIL → treat as real failure below.
+   **Known Claude Code bug (classifyHandoffIfNeeded):** If an agent reports "failed" with error containing `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a GSD or agent issue. The error fires in the completion handler AFTER all tool calls finish. In this case: run the same spot-checks as step 4 (SUMMARY.md exists, commits present in jj log, no Self-Check: FAILED). If spot-checks PASS → treat as **successful**. If spot-checks FAIL → treat as real failure below.
 
    For real failures: report which plan failed → ask "Continue?" or "Stop?" → if continue, dependent plans may also fail. If stop, partial completion report.
 

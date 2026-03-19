@@ -1,12 +1,12 @@
 <overview>
-Git integration for GSD framework.
+Jujutsu (jj) integration for GSD framework.
 </overview>
 
 <core_principle>
 
 **Commit outcomes, not process.**
 
-The git log should read like a changelog of what shipped, not a diary of planning activity.
+The jj log should read like a changelog of what shipped, not a diary of planning activity.
 </core_principle>
 
 <commit_points>
@@ -23,14 +23,14 @@ The git log should read like a changelog of what shipped, not a diary of plannin
 
 </commit_points>
 
-<git_check>
+<jj_check>
 
 ```bash
-[ -d .git ] && echo "GIT_EXISTS" || echo "NO_GIT"
+[ -d .jj ] && echo "JJ_EXISTS" || echo "NO_JJ"
 ```
 
-If NO_GIT: Run `git init` silently. GSD projects always get their own repo.
-</git_check>
+If NO_JJ: Run `jj git init` silently. GSD projects always get their own repo.
+</jj_check>
 
 <commit_formats>
 
@@ -59,7 +59,7 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: initialize [p
 <format name="task-completion">
 ## Task Completion (During Plan Execution)
 
-Each task gets its own commit immediately after completion.
+Each task gets its own commit immediately after completion. No staging needed — jj auto-tracks all files.
 
 > **Parallel agents:** When running as a parallel executor (spawned by execute-phase),
 > use `--no-verify` on all commits to avoid pre-commit hook lock contention.
@@ -84,9 +84,8 @@ Each task gets its own commit immediately after completion.
 **Examples:**
 
 ```bash
-# Standard task
-git add src/api/auth.ts src/types/user.ts
-git commit -m "feat(08-02): create user registration endpoint
+# Standard task — no staging step needed
+jj commit -m "feat(08-02): create user registration endpoint
 
 - POST /auth/register validates email and password
 - Checks for duplicate users
@@ -94,8 +93,7 @@ git commit -m "feat(08-02): create user registration endpoint
 "
 
 # TDD task - RED phase
-git add src/__tests__/jwt.test.ts
-git commit -m "test(07-02): add failing test for JWT generation
+jj commit -m "test(07-02): add failing test for JWT generation
 
 - Tests token contains user ID claim
 - Tests token expires in 1 hour
@@ -103,8 +101,7 @@ git commit -m "test(07-02): add failing test for JWT generation
 "
 
 # TDD task - GREEN phase
-git add src/utils/jwt.ts
-git commit -m "feat(07-02): implement JWT generation
+jj commit -m "feat(07-02): implement JWT generation
 
 - Uses jose library for signing
 - Includes user ID and expiry claims
@@ -229,24 +226,26 @@ Each plan produces 2-4 commits (tasks + metadata). Clear, granular, bisectable.
 ## Why Per-Task Commits?
 
 **Context engineering for AI:**
-- Git history becomes primary context source for future Claude sessions
-- `git log --grep="{phase}-{plan}"` shows all work for a plan
-- `git diff <hash>^..<hash>` shows exact changes per task
+- VCS history becomes primary context source for future Claude sessions
+- `jj log --no-graph -r 'description(glob:"{phase}-{plan}*")'` shows all work for a plan
+- `jj diff -r CHANGE_ID` shows exact changes per task
+- Change IDs are stable across rewrites — more reliable than commit hashes
 - Less reliance on parsing SUMMARY.md = more context for actual work
 
 **Failure recovery:**
-- Task 1 committed ✅, Task 2 failed ❌
+- Task 1 committed, Task 2 failed
 - Claude in next session: sees task 1 complete, can retry task 2
-- Can `git reset --hard` to last successful task
+- Can `jj backout -r CHANGE_ID` to undo a specific task
 
 **Debugging:**
-- `git bisect` finds exact failing task, not just failing plan
-- `git blame` traces line to specific task context
-- Each commit is independently revertable
+- Manual binary search through `jj log` finds exact failing task, not just failing plan
+- `jj file annotate` traces line to specific task context
+- Each commit is independently revertable with `jj backout`
 
 **Observability:**
 - Solo developer + Claude workflow benefits from granular attribution
-- Atomic commits are git best practice
+- Atomic commits are VCS best practice
 - "Commit noise" irrelevant when consumer is Claude, not humans
 
 </commit_strategy_rationale>
+</output>

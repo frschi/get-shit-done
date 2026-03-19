@@ -3,8 +3,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
-const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningPaths, toPosixPath, output, error, findPhaseInternal, getRoadmapPhaseInternal } = require('./core.cjs');
+const { safeReadFile, loadConfig, isJJIgnored, execJJ, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningPaths, toPosixPath, output, error, findPhaseInternal, getRoadmapPhaseInternal } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
@@ -228,36 +227,51 @@ function cmdCommit(cwd, message, files, raw, amend, noVerify) {
     return;
   }
 
-  // Check if .planning is gitignored
-  if (isGitIgnored(cwd, '.planning')) {
-    const result = { committed: false, hash: null, reason: 'skipped_gitignored' };
+  // Check if .planning is ignored via .gitignore (jj respects .gitignore)
+  if (isJJIgnored(cwd, '.planning')) {
+    const result = { committed: false, hash: null, reason: 'skipped_ignored' };
     output(result, raw, 'skipped');
     return;
   }
 
-  // Stage files
-  const filesToStage = files && files.length > 0 ? files : ['.planning/'];
-  for (const file of filesToStage) {
-    execGit(cwd, ['add', file]);
-  }
+  // jj auto-tracks all files — no staging step needed
 
-  // Commit (--no-verify skips pre-commit hooks, used by parallel executor agents)
-  const commitArgs = amend ? ['commit', '--amend', '--no-edit'] : ['commit', '-m', message];
-  if (noVerify) commitArgs.push('--no-verify');
-  const commitResult = execGit(cwd, commitArgs);
-  if (commitResult.exitCode !== 0) {
-    if (commitResult.stdout.includes('nothing to commit') || commitResult.stderr.includes('nothing to commit')) {
-      const result = { committed: false, hash: null, reason: 'nothing_to_commit' };
+  // Commit or amend
+  if (amend) {
+    // jj describe updates the current working copy change message;
+    // jj squash folds the working copy into the parent (like --amend --no-edit)
+    if (message) {
+      const describeResult = execJJ(cwd, ['describe', '-m', message]);
+      if (describeResult.exitCode !== 0) {
+        const result = { committed: false, hash: null, reason: 'nothing_to_commit', error: describeResult.stderr };
+        output(result, raw, 'nothing');
+        return;
+      }
+    } else {
+      const squashResult = execJJ(cwd, ['squash']);
+      if (squashResult.exitCode !== 0) {
+        const result = { committed: false, hash: null, reason: 'nothing_to_commit', error: squashResult.stderr };
+        output(result, raw, 'nothing');
+        return;
+      }
+    }
+  } else {
+    // jj has no hooks, so --no-verify is not needed
+    const commitResult = execJJ(cwd, ['commit', '-m', message]);
+    if (commitResult.exitCode !== 0) {
+      if (commitResult.stdout.includes('nothing to commit') || commitResult.stderr.includes('nothing to commit')) {
+        const result = { committed: false, hash: null, reason: 'nothing_to_commit' };
+        output(result, raw, 'nothing');
+        return;
+      }
+      const result = { committed: false, hash: null, reason: 'nothing_to_commit', error: commitResult.stderr };
       output(result, raw, 'nothing');
       return;
     }
-    const result = { committed: false, hash: null, reason: 'nothing_to_commit', error: commitResult.stderr };
-    output(result, raw, 'nothing');
-    return;
   }
 
-  // Get short hash
-  const hashResult = execGit(cwd, ['rev-parse', '--short', 'HEAD']);
+  // Get short change ID — after jj commit, the committed change is @-
+  const hashResult = execJJ(cwd, ['log', '-r', '@-', '--no-graph', '-T', 'change_id.short(8)']);
   const hash = hashResult.exitCode === 0 ? hashResult.stdout : null;
   const result = { committed: true, hash, reason: 'committed' };
   output(result, raw, hash || 'committed');
@@ -753,20 +767,16 @@ function cmdStats(cwd, format, raw) {
     }
   } catch { /* intentionally empty */ }
 
-  // Git stats
-  let gitCommits = 0;
-  let gitFirstCommitDate = null;
-  const commitCount = execGit(cwd, ['rev-list', '--count', 'HEAD']);
-  if (commitCount.exitCode === 0) {
-    gitCommits = parseInt(commitCount.stdout, 10) || 0;
+  // VCS stats (jj)
+  let jjCommits = 0;
+  let jjFirstCommitDate = null;
+  const commitCount = execJJ(cwd, ['log', '--no-graph', '-T', 'change_id.short(8) ++ "\\n"']);
+  if (commitCount.exitCode === 0 && commitCount.stdout) {
+    jjCommits = commitCount.stdout.split('\n').filter(l => l.trim()).length;
   }
-  const rootHash = execGit(cwd, ['rev-list', '--max-parents=0', 'HEAD']);
-  if (rootHash.exitCode === 0 && rootHash.stdout) {
-    const firstCommit = rootHash.stdout.split('\n')[0].trim();
-    const firstDate = execGit(cwd, ['show', '-s', '--format=%as', firstCommit]);
-    if (firstDate.exitCode === 0) {
-      gitFirstCommitDate = firstDate.stdout || null;
-    }
+  const rootInfo = execJJ(cwd, ['log', '-r', 'root()', '--no-graph', '-T', 'committer.timestamp().format("%Y-%m-%d")']);
+  if (rootInfo.exitCode === 0 && rootInfo.stdout) {
+    jjFirstCommitDate = rootInfo.stdout.trim() || null;
   }
 
   const result = {
@@ -781,8 +791,8 @@ function cmdStats(cwd, format, raw) {
     plan_percent: planPercent,
     requirements_total: requirementsTotal,
     requirements_complete: requirementsComplete,
-    git_commits: gitCommits,
-    git_first_commit_date: gitFirstCommitDate,
+    jj_commits: jjCommits,
+    jj_first_commit_date: jjFirstCommitDate,
     last_activity: lastActivity,
   };
 
@@ -805,9 +815,9 @@ function cmdStats(cwd, format, raw) {
     for (const p of phases) {
       out += `| ${p.number} | ${p.name} | ${p.plans} | ${p.summaries} | ${p.status} |\n`;
     }
-    if (gitCommits > 0) {
-      out += `\n**Git:** ${gitCommits} commits`;
-      if (gitFirstCommitDate) out += ` (since ${gitFirstCommitDate})`;
+    if (jjCommits > 0) {
+      out += `\n**jj:** ${jjCommits} commits`;
+      if (jjFirstCommitDate) out += ` (since ${jjFirstCommitDate})`;
       out += '\n';
     }
     if (lastActivity) out += `**Last activity:** ${lastActivity}\n`;

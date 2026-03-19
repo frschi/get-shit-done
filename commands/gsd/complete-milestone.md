@@ -13,7 +13,7 @@ allowed-tools:
 Mark milestone {{version}} complete, archive to milestones/, and update ROADMAP.md and REQUIREMENTS.md.
 
 Purpose: Create historical record of shipped version, archive milestone artifacts (roadmap + requirements), and prepare for next milestone.
-Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tagged.
+Output: Milestone archived (roadmap + requirements), PROJECT.md evolved.
 </objective>
 
 <execution_context>
@@ -70,8 +70,8 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 2. **Gather stats:**
 
    - Count phases, plans, tasks
-   - Calculate git range, file changes, LOC
-   - Extract timeline from git log
+   - Calculate commit range, file changes, LOC
+   - Extract timeline from commit log
    - Present summary, confirm
 
 3. **Extract accomplishments:**
@@ -100,12 +100,10 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
    - Add "Next Milestone Goals" section
    - Archive previous content in `<details>` (if v1.1+)
 
-7. **Commit and tag:**
+7. **Commit:**
 
-   - Stage: MILESTONES.md, PROJECT.md, ROADMAP.md, STATE.md, archive files
    - Commit: `chore: archive v{{version}} milestone`
-   - Tag: `git tag -a v{{version}} -m "[milestone summary]"`
-   - Ask about pushing tag
+   - Include: MILESTONES.md, PROJECT.md, ROADMAP.md, STATE.md, archive files
 
 8. **Offer next steps:**
    - `/gsd:new-milestone` — start next milestone (questioning → research → requirements → roadmap)
@@ -119,7 +117,6 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 - `.planning/REQUIREMENTS.md` deleted (fresh for next milestone)
 - ROADMAP.md collapsed to one-line entry
 - PROJECT.md updated with current state
-- Git tag v{{version}} created
 - Commit successful
 - User knows next steps (including need for fresh requirements)
   </success_criteria>

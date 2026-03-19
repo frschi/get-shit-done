@@ -392,19 +392,22 @@ app.use(bodyParser.json({ limit: '50mb' })); // Uncomment, test → BREAKS
 // FOUND: Body size limit too high causes memory issues
 ```
 
-## Git Bisect
+## History Binary Search
 
 **When:** Feature worked in past, broke at unknown commit.
 
-**How:** Binary search through git history.
+**How:** Manual binary search through VCS history.
 
 ```bash
-git bisect start
-git bisect bad              # Current commit is broken
-git bisect good abc123      # This commit worked
-# Git checks out middle commit
-git bisect bad              # or good, based on testing
-# Repeat until culprit found
+# 1. Find the range: identify good/bad revisions
+jj log --no-graph
+
+# 2. Check out midpoint revision
+jj new MIDPOINT_REVISION
+
+# 3. Test, then narrow the range
+
+# 4. Repeat until found
 ```
 
 100 commits between working and broken: ~7 tests to find exact breaking commit.
@@ -417,7 +420,7 @@ git bisect bad              # or good, based on testing
 | Confused about what's happening | Rubber duck, Observability first |
 | Complex system, many interactions | Minimal reproduction |
 | Know the desired output | Working backwards |
-| Used to work, now doesn't | Differential debugging, Git bisect |
+| Used to work, now doesn't | Differential debugging, History binary search |
 | Many possible causes | Comment out everything, Binary search |
 | Always | Observability first (before making changes) |
 
@@ -1094,11 +1097,9 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 **Commit the fix:**
 
-Stage and commit code changes (NEVER `git add -A` or `git add .`):
+Commit code changes:
 ```bash
-git add src/path/to/fixed-file.ts
-git add src/path/to/other-file.ts
-git commit -m "fix: {brief description}
+jj commit -m "fix: {brief description}
 
 Root cause: {root_cause}"
 ```

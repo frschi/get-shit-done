@@ -33,7 +33,7 @@ Parse current values (default to `true` if not present):
 - `workflow.ui_phase` — generate UI-SPEC.md design contracts for frontend phases (default: true if absent)
 - `workflow.ui_safety_gate` — prompt to run /gsd:ui-phase before planning frontend phases (default: true if absent)
 - `model_profile` — which model each agent uses (default: `balanced`)
-- `git.branching_strategy` — branching approach (default: `"none"`)
+- `jj.branching_strategy` — branching approach (default: `"none"`)
 </step>
 
 <step name="present_settings">
@@ -118,7 +118,7 @@ AskUserQuestion([
     ]
   },
   {
-    question: "Git branching strategy?",
+    question: "Branching strategy?",
     header: "Branching",
     multiSelect: false,
     options: [
@@ -165,7 +165,7 @@ Merge new settings into existing config.json:
     "ui_phase": true/false,
     "ui_safety_gate": true/false
   },
-  "git": {
+  "jj": {
     "branching_strategy": "none" | "phase" | "milestone"
   },
   "hooks": {
@@ -242,7 +242,7 @@ Display:
 | Nyquist Validation   | {On/Off} |
 | UI Phase             | {On/Off} |
 | UI Safety Gate       | {On/Off} |
-| Git Branching        | {None/Per Phase/Per Milestone} |
+| Branching            | {None/Per Phase/Per Milestone} |
 | Context Warnings     | {On/Off} |
 | Saved as Defaults    | {Yes/No} |
 
@@ -260,8 +260,8 @@ Quick commands:
 
 <success_criteria>
 - [ ] Current config read
-- [ ] User presented with 9 settings (profile + 7 workflow toggles + git branching)
-- [ ] Config updated with model_profile, workflow, and git sections
+- [ ] User presented with 9 settings (profile + 7 workflow toggles + branching)
+- [ ] Config updated with model_profile, workflow, and jj sections
 - [ ] User offered to save as global defaults (~/.gsd/defaults.json)
 - [ ] Changes confirmed to user
 </success_criteria>

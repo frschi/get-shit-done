@@ -8,7 +8,7 @@ Configuration options for `.planning/` directory behavior.
   "commit_docs": true,
   "search_gitignored": false
 },
-"git": {
+"jj": {
   "branching_strategy": "none",
   "phase_branch_template": "gsd/phase-{phase}-{slug}",
   "milestone_branch_template": "gsd/{milestone}-{slug}"
@@ -17,22 +17,22 @@ Configuration options for `.planning/` directory behavior.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `commit_docs` | `true` | Whether to commit planning artifacts to git |
+| `commit_docs` | `true` | Whether to commit planning artifacts |
 | `search_gitignored` | `false` | Add `--no-ignore` to broad rg searches |
-| `git.branching_strategy` | `"none"` | Git branching approach: `"none"`, `"phase"`, or `"milestone"` |
-| `git.phase_branch_template` | `"gsd/phase-{phase}-{slug}"` | Branch template for phase strategy |
-| `git.milestone_branch_template` | `"gsd/{milestone}-{slug}"` | Branch template for milestone strategy |
+| `jj.branching_strategy` | `"none"` | Bookmark strategy: `"none"`, `"phase"`, or `"milestone"` |
+| `jj.phase_branch_template` | `"gsd/phase-{phase}-{slug}"` | Bookmark template for phase strategy |
+| `jj.milestone_branch_template` | `"gsd/{milestone}-{slug}"` | Bookmark template for milestone strategy |
 </config_schema>
 
 <commit_docs_behavior>
 
 **When `commit_docs: true` (default):**
 - Planning files committed normally
-- SUMMARY.md, STATE.md, ROADMAP.md tracked in git
+- SUMMARY.md, STATE.md, ROADMAP.md tracked
 - Full history of planning decisions preserved
 
 **When `commit_docs: false`:**
-- Skip all `git add`/`git commit` for `.planning/` files
+- Skip all commits for `.planning/` files
 - User must add `.planning/` to `.gitignore`
 - Useful for: OSS contributions, client projects, keeping planning private
 
@@ -53,7 +53,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # commit_docs is included in all init command outputs
 ```
 
-**Auto-detection:** If `.planning/` is gitignored, `commit_docs` is automatically `false` regardless of config.json. This prevents git errors when users have `.planning/` in `.gitignore`.
+**Auto-detection:** If `.planning/` is in .gitignore, `commit_docs` is automatically `false` regardless of config.json. This prevents errors when users have `.planning/` in `.gitignore`.
 
 **Commit via CLI (handles checks automatically):**
 
@@ -97,42 +97,38 @@ To use uncommitted mode:
    .planning/
    ```
 
-3. **Existing tracked files:** If `.planning/` was previously tracked:
-   ```bash
-   git rm -r --cached .planning/
-   git commit -m "chore: stop tracking planning docs"
-   ```
+3. **Existing tracked files:** If `.planning/` was previously tracked, just delete the files and commit the .gitignore change.
 
-4. **Branch merges:** When using `branching_strategy: phase` or `milestone`, the `complete-milestone` workflow automatically strips `.planning/` files from staging before merge commits when `commit_docs: false`.
+4. **Bookmark merges:** When using `branching_strategy: phase` or `milestone`, the `complete-milestone` workflow automatically strips `.planning/` files from staging before merge commits when `commit_docs: false`.
 
 </setup_uncommitted_mode>
 
 <branching_strategy_behavior>
 
-**Branching Strategies:**
+**Bookmark Strategies:**
 
-| Strategy | When branch created | Branch scope | Merge point |
+| Strategy | When bookmark created | Bookmark scope | Merge point |
 |----------|---------------------|--------------|-------------|
 | `none` | Never | N/A | N/A |
 | `phase` | At `execute-phase` start | Single phase | User merges after phase |
 | `milestone` | At first `execute-phase` of milestone | Entire milestone | At `complete-milestone` |
 
-**When `git.branching_strategy: "none"` (default):**
-- All work commits to current branch
+**When `jj.branching_strategy: "none"` (default):**
+- All work commits to current working copy
 - Standard GSD behavior
 
-**When `git.branching_strategy: "phase"`:**
-- `execute-phase` creates/switches to a branch before execution
-- Branch name from `phase_branch_template` (e.g., `gsd/phase-03-authentication`)
-- All plan commits go to that branch
-- User merges branches manually after phase completion
-- `complete-milestone` offers to merge all phase branches
+**When `jj.branching_strategy: "phase"`:**
+- `execute-phase` creates a new revision and bookmark before execution
+- Bookmark name from `phase_branch_template` (e.g., `gsd/phase-03-authentication`)
+- All plan commits go to that bookmark
+- User merges bookmarks manually after phase completion
+- `complete-milestone` offers to merge all phase bookmarks
 
-**When `git.branching_strategy: "milestone"`:**
-- First `execute-phase` of milestone creates the milestone branch
-- Branch name from `milestone_branch_template` (e.g., `gsd/v1.0-mvp`)
-- All phases in milestone commit to same branch
-- `complete-milestone` offers to merge milestone branch to main
+**When `jj.branching_strategy: "milestone"`:**
+- First `execute-phase` of milestone creates the milestone bookmark
+- Bookmark name from `milestone_branch_template` (e.g., `gsd/v1.0-mvp`)
+- All phases in milestone commit to same bookmark
+- `complete-milestone` offers to merge milestone bookmark to main
 
 **Template variables:**
 
@@ -158,34 +154,36 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # Parse branching_strategy, phase_branch_template, milestone_branch_template from JSON
 ```
 
-**Branch creation:**
+**Bookmark creation:**
 
 ```bash
 # For phase strategy
 if [ "$BRANCHING_STRATEGY" = "phase" ]; then
   PHASE_SLUG=$(echo "$PHASE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-  BRANCH_NAME=$(echo "$PHASE_BRANCH_TEMPLATE" | sed "s/{phase}/$PADDED_PHASE/g" | sed "s/{slug}/$PHASE_SLUG/g")
-  git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+  BOOKMARK_NAME=$(echo "$PHASE_BRANCH_TEMPLATE" | sed "s/{phase}/$PADDED_PHASE/g" | sed "s/{slug}/$PHASE_SLUG/g")
+  jj new
+  jj bookmark create "$BOOKMARK_NAME"
 fi
 
 # For milestone strategy
 if [ "$BRANCHING_STRATEGY" = "milestone" ]; then
   MILESTONE_SLUG=$(echo "$MILESTONE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-  BRANCH_NAME=$(echo "$MILESTONE_BRANCH_TEMPLATE" | sed "s/{milestone}/$MILESTONE_VERSION/g" | sed "s/{slug}/$MILESTONE_SLUG/g")
-  git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+  BOOKMARK_NAME=$(echo "$MILESTONE_BRANCH_TEMPLATE" | sed "s/{milestone}/$MILESTONE_VERSION/g" | sed "s/{slug}/$MILESTONE_SLUG/g")
+  jj new
+  jj bookmark create "$BOOKMARK_NAME"
 fi
 ```
 
 **Merge options at complete-milestone:**
 
-| Option | Git command | Result |
-|--------|-------------|--------|
-| Squash merge (recommended) | `git merge --squash` | Single clean commit per branch |
-| Merge with history | `git merge --no-ff` | Preserves all individual commits |
-| Delete without merging | `git branch -D` | Discard branch work |
-| Keep branches | (none) | Manual handling later |
+| Option | Command | Result |
+|--------|---------|--------|
+| Squash merge (recommended) | `jj squash --from BOOKMARK` | Single clean commit per bookmark |
+| Merge with history | `jj new main BOOKMARK` | Preserves all individual commits |
+| Delete without merging | `jj bookmark delete BOOKMARK` | Discard bookmark work |
+| Keep bookmarks | (none) | Manual handling later |
 
-Squash merge is recommended — keeps main branch history clean while preserving the full development history in the branch (until deleted).
+Squash merge is recommended — keeps main history clean while preserving the full development history.
 
 **Use cases:**
 
@@ -198,3 +196,4 @@ Squash merge is recommended — keeps main branch history clean while preserving
 </branching_strategy_behavior>
 
 </planning_config>
+</output>

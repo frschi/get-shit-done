@@ -12,16 +12,16 @@ Read all files referenced by the invoking prompt's execution_context before star
 Collect session data from available sources:
 
 1. **STATE.md** — current phase, milestone, progress, blockers, decisions
-2. **Git log** — commits made during this session (last 24h or since last report)
+2. **Change log** — commits made during this session (last 24h or since last report)
 3. **Plan/Summary files** — plans executed, summaries written
 4. **ROADMAP.md** — milestone context and phase goals
 
 ```bash
 # Get recent commits (last 24 hours)
-git log --oneline --since="24 hours ago" --no-merges 2>/dev/null || echo "No recent commits"
+jj log --no-graph -r 'committer_date(after:"24 hours ago")' 2>/dev/null || echo "No recent commits"
 
 # Count files changed
-git diff --stat HEAD~10 HEAD 2>/dev/null | tail -1 || echo "No diff available"
+jj diff --from @~10 --to @ --stat 2>/dev/null | tail -1 || echo "No diff available"
 ```
 
 Read `.planning/STATE.md` to get:
@@ -41,7 +41,7 @@ ls -la .planning/reports/SESSION_REPORT*.md 2>/dev/null || echo "No previous rep
 <step name="estimate_usage">
 Estimate token usage from observable signals:
 
-- Count of tool calls is not directly available, so estimate from git activity and file operations
+- Count of tool calls is not directly available, so estimate from VCS activity and file operations
 - Note: This is an **estimate** — exact token counts require API-level instrumentation not available to hooks
 
 Estimation heuristics:
@@ -74,7 +74,7 @@ Write `.planning/reports/SESSION_REPORT.md` (or `.planning/reports/YYYYMMDD-sess
 **Duration:** [estimated from first to last commit timestamp, or "Single session"]
 **Phase Progress:** [from STATE.md]
 **Plans Executed:** [count of summaries written this session]
-**Commits Made:** [count from git log]
+**Commits Made:** [count from jj log]
 
 ## Work Performed
 
@@ -89,7 +89,7 @@ Write `.planning/reports/SESSION_REPORT.md` (or `.planning/reports/YYYYMMDD-sess
 
 ## Files Changed
 
-[Summary of files modified, created, deleted — from git diff stat]
+[Summary of files modified, created, deleted — from jj diff stat]
 
 ## Blockers & Open Items
 
@@ -138,7 +138,7 @@ If this is the first report, mention:
 </process>
 
 <success_criteria>
-- [ ] Session data gathered from STATE.md, git log, and plan files
+- [ ] Session data gathered from STATE.md, jj log, and plan files
 - [ ] Report written to .planning/reports/
 - [ ] Report includes work summary, outcomes, and file changes
 - [ ] Filename includes date to prevent overwrites

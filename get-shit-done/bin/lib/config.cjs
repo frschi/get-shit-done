@@ -17,7 +17,7 @@ const VALID_CONFIG_KEYS = new Set([
   'workflow.research', 'workflow.plan_check', 'workflow.verifier',
   'workflow.nyquist_validation', 'workflow.ui_phase', 'workflow.ui_safety_gate',
   'workflow._auto_chain_active',
-  'git.branching_strategy', 'git.phase_branch_template', 'git.milestone_branch_template',
+  'jj.branching_strategy', 'jj.phase_branch_template', 'jj.milestone_branch_template',
   'planning.commit_docs', 'planning.search_gitignored',
 ]);
 
@@ -86,7 +86,7 @@ function ensureConfigFile(cwd) {
   // Create default config (user-level defaults override hardcoded defaults)
   const hardcoded = {
     model_profile: 'balanced',
-    commit_docs: true,
+    commit_docs: false,
     search_gitignored: false,
     branching_strategy: 'none',
     phase_branch_template: 'gsd/phase-{phase}-{slug}',

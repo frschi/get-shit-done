@@ -531,7 +531,7 @@ After executor returns:
 2. Extract commit hash from executor output
 3. Report completion status
 
-**Known Claude Code bug (classifyHandoffIfNeeded):** If executor reports "failed" with error `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a real failure. Check if summary file exists and git log shows commits. If so, treat as successful.
+**Known Claude Code bug (classifyHandoffIfNeeded):** If executor reports "failed" with error `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a real failure. Check if summary file exists and jj log shows commits. If so, treat as successful.
 
 If summary not found, error: "Executor failed to create ${quick_id}-SUMMARY.md"
 
@@ -657,7 +657,7 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(quick-${quick_
 
 Get final commit hash:
 ```bash
-commit_hash=$(git rev-parse --short HEAD)
+commit_hash=$(jj log -r @- --no-graph -T 'change_id.short(8)')
 ```
 
 Display completion output:

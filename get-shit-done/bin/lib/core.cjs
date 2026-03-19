@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
 // ─── Path helpers ────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ function loadConfig(cwd) {
   const configPath = path.join(cwd, '.planning', 'config.json');
   const defaults = {
     model_profile: 'balanced',
-    commit_docs: true,
+    commit_docs: false,
     search_gitignored: false,
     branching_strategy: 'none',
     phase_branch_template: 'gsd/phase-{phase}-{slug}',
@@ -99,9 +99,9 @@ function loadConfig(cwd) {
       model_profile: get('model_profile') ?? defaults.model_profile,
       commit_docs: get('commit_docs', { section: 'planning', field: 'commit_docs' }) ?? defaults.commit_docs,
       search_gitignored: get('search_gitignored', { section: 'planning', field: 'search_gitignored' }) ?? defaults.search_gitignored,
-      branching_strategy: get('branching_strategy', { section: 'git', field: 'branching_strategy' }) ?? defaults.branching_strategy,
-      phase_branch_template: get('phase_branch_template', { section: 'git', field: 'phase_branch_template' }) ?? defaults.phase_branch_template,
-      milestone_branch_template: get('milestone_branch_template', { section: 'git', field: 'milestone_branch_template' }) ?? defaults.milestone_branch_template,
+      branching_strategy: get('branching_strategy', { section: 'jj', field: 'branching_strategy' }) ?? defaults.branching_strategy,
+      phase_branch_template: get('phase_branch_template', { section: 'jj', field: 'phase_branch_template' }) ?? defaults.phase_branch_template,
+      milestone_branch_template: get('milestone_branch_template', { section: 'jj', field: 'milestone_branch_template' }) ?? defaults.milestone_branch_template,
       research: get('research', { section: 'workflow', field: 'research' }) ?? defaults.research,
       plan_checker: get('plan_checker', { section: 'workflow', field: 'plan_check' }) ?? defaults.plan_checker,
       verifier: get('verifier', { section: 'workflow', field: 'verifier' }) ?? defaults.verifier,
@@ -117,19 +117,22 @@ function loadConfig(cwd) {
   }
 }
 
-// ─── Git utilities ────────────────────────────────────────────────────────────
+// ─── VCS utilities ────────────────────────────────────────────────────────────
 
-function isGitIgnored(cwd, targetPath) {
+function isJJIgnored(cwd, targetPath) {
+  // jj respects .gitignore automatically. Check the .gitignore file directly
+  // for the target path instead of spawning a process.
   try {
-    // --no-index checks .gitignore rules regardless of whether the file is tracked.
-    // Without it, git check-ignore returns "not ignored" for tracked files even when
-    // .gitignore explicitly lists them — a common source of confusion when .planning/
-    // was committed before being added to .gitignore.
-    execSync('git check-ignore -q --no-index -- ' + targetPath.replace(/[^a-zA-Z0-9._\-/]/g, ''), {
-      cwd,
-      stdio: 'pipe',
+    const gitignorePath = path.join(cwd, '.gitignore');
+    const content = fs.readFileSync(gitignorePath, 'utf-8');
+    const lines = content.split('\n').map(l => l.trim());
+    // Normalize: strip trailing slash for comparison
+    const normalized = targetPath.replace(/\/+$/, '');
+    return lines.some(line => {
+      if (!line || line.startsWith('#')) return false;
+      const cleanLine = line.replace(/\/+$/, '');
+      return cleanLine === normalized || cleanLine === normalized + '/' || cleanLine === '/' + normalized;
     });
-    return true;
   } catch {
     return false;
   }
@@ -239,8 +242,8 @@ function isClosingFence(lines, i) {
   return fenceCount % 2 === 0;
 }
 
-function execGit(cwd, args) {
-  const result = spawnSync('git', args, {
+function execJJ(cwd, args) {
+  const result = spawnSync('jj', args, {
     cwd,
     stdio: 'pipe',
     encoding: 'utf-8',
@@ -712,8 +715,8 @@ module.exports = {
   error,
   safeReadFile,
   loadConfig,
-  isGitIgnored,
-  execGit,
+  isJJIgnored,
+  execJJ,
   normalizeMd,
   escapeRegex,
   normalizePhaseName,

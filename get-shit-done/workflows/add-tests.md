@@ -303,8 +303,7 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state-snapshot
 If there are passing tests to commit:
 
 ```bash
-git add {test files}
-git commit -m "test(phase-${phase_number}): add unit and E2E tests from add-tests command"
+jj commit -m "test(phase-${phase_number}): add unit and E2E tests from add-tests command"
 ```
 
 Present next steps:

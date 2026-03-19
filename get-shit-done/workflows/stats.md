@@ -1,5 +1,5 @@
 <purpose>
-Display comprehensive project statistics including phases, plans, requirements, git metrics, and timeline.
+Display comprehensive project statistics including phases, plans, requirements, commit metrics, and timeline.
 </purpose>
 
 <required_reading>
@@ -39,7 +39,7 @@ X/Y plans complete (Z%)
 ## Requirements
 ✅ X/Y requirements complete
 
-## Git
+## VCS
 - **Commits:** N
 - **Started:** YYYY-MM-DD
 - **Last activity:** YYYY-MM-DD

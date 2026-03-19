@@ -38,20 +38,20 @@ Verify the work is ready to ship:
 
 2. **Clean working tree?**
    ```bash
-   git status --short
+   jj status
    ```
-   If uncommitted changes exist: ask user to commit or stash first.
+   If uncommitted changes exist: ask user to commit first.
 
-3. **On correct branch?**
+3. **On correct bookmark?**
    ```bash
-   CURRENT_BRANCH=$(git branch --show-current)
+   CURRENT_BOOKMARK=$(jj log -r @ --no-graph -T 'bookmarks')
    ```
-   If on `main`/`master`: warn — should be on a feature branch.
-   If branching_strategy is `none`: offer to create a branch now.
+   If on `main`/`master`: warn — should be on a feature bookmark.
+   If branching_strategy is `none`: offer to create a bookmark now.
 
 4. **Remote configured?**
    ```bash
-   git remote -v | head -2
+   jj git remote list
    ```
    Detect `origin` remote. If no remote: error — can't create PR.
 
@@ -63,18 +63,13 @@ Verify the work is ready to ship:
 </step>
 
 <step name="push_branch">
-Push the current branch to remote:
+Push the current bookmark to remote:
 
 ```bash
-git push origin ${CURRENT_BRANCH} 2>&1
+jj git push --bookmark ${CURRENT_BOOKMARK} 2>&1
 ```
 
-If push fails (e.g., no upstream): set upstream:
-```bash
-git push --set-upstream origin ${CURRENT_BRANCH} 2>&1
-```
-
-Report: "Pushed `{branch}` to origin ({commit_count} commits ahead of main)"
+Report: "Pushed `{bookmark}` to origin ({commit_count} commits ahead of main)"
 </step>
 
 <step name="generate_pr_body">
@@ -194,7 +189,7 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(${padded_phase
 ## ✓ Phase {X}: {Name} — Shipped
 
 PR: #{number} ({url})
-Branch: {branch} → main
+Bookmark: {bookmark} → main
 Commits: {count}
 Verification: ✓ Passed
 Requirements: {N} REQ-IDs addressed
@@ -220,8 +215,8 @@ After shipping:
 </offer_next>
 
 <success_criteria>
-- [ ] Preflight checks passed (verification, clean tree, branch, remote, gh)
-- [ ] Branch pushed to remote
+- [ ] Preflight checks passed (verification, clean tree, bookmark, remote, gh)
+- [ ] Bookmark pushed to remote
 - [ ] PR created with rich auto-generated body
 - [ ] STATE.md updated with shipping status
 - [ ] User knows PR number and next steps

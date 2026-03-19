@@ -204,7 +204,7 @@ Agents only diagnose—plan-phase --gaps handles fixes (no fix application).
 - Can resume with /gsd:debug
 
 **All agents fail:**
-- Something systemic (permissions, git, etc.)
+- Something systemic (permissions, VCS, etc.)
 - Report for manual investigation
 - Fall back to plan-phase --gaps without root causes (less precise)
 </failure_handling>

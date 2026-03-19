@@ -410,10 +410,9 @@ describe('verify summary command', () => {
     // Create a source file and commit it
     fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, 'src', 'app.js'), 'console.log("hello");\n');
-    execSync('git add -A', { cwd: tmpDir, stdio: 'pipe' });
-    execSync('git commit -m "add app.js"', { cwd: tmpDir, stdio: 'pipe' });
+    execSync('jj commit -m "add app.js"', { cwd: tmpDir, stdio: 'pipe' });
 
-    const hash = execSync('git rev-parse --short HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    const hash = execSync('jj log -r @- --no-graph -T "change_id.short(8)"', { cwd: tmpDir, encoding: 'utf-8' }).trim();
 
     // Write SUMMARY.md referencing the file and commit hash
     const summaryPath = path.join(tmpDir, '.planning', 'phases', '01-test', '01-01-SUMMARY.md');
@@ -641,7 +640,7 @@ describe('verify commits command', () => {
   });
 
   test('validates real commit hashes', () => {
-    const hash = execSync('git rev-parse --short HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    const hash = execSync('jj log -r @- --no-graph -T "change_id.short(8)"', { cwd: tmpDir, encoding: 'utf-8' }).trim();
 
     const result = runGsdTools(`verify commits ${hash}`, tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -664,7 +663,7 @@ describe('verify commits command', () => {
   });
 
   test('handles mixed valid and invalid hashes', () => {
-    const hash = execSync('git rev-parse --short HEAD', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    const hash = execSync('jj log -r @- --no-graph -T "change_id.short(8)"', { cwd: tmpDir, encoding: 'utf-8' }).trim();
 
     const result = runGsdTools(`verify commits ${hash} abcdef1234567`, tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);

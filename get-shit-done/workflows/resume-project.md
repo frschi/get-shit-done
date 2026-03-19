@@ -87,7 +87,7 @@ fi
 - Parse `status`, `phase`, `plan`, `task`, `total_tasks`, `next_action`
 - Check `blockers` and `human_actions_pending` — surface these immediately
 - Check `completed_tasks` for `in_progress` items — these need attention first
-- Validate `uncommitted_files` against `git status` — flag divergence
+- Validate `uncommitted_files` against `jj status` — flag divergence
 - Use `context_notes` to restore mental model
 - Flag: "Found structured handoff — resuming from task {task}/{total_tasks}"
 - **After successful resumption, delete HANDOFF.json** (it's a one-shot artifact)

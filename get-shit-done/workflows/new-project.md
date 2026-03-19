@@ -14,7 +14,7 @@ Check if `--auto` flag is present in $ARGUMENTS.
 **If auto mode:**
 - Skip brownfield mapping offer (assume greenfield)
 - Skip deep questioning (extract context from provided document)
-- Config: YOLO mode is implicit (skip that question), but ask granularity/git/agents FIRST (Step 2a)
+- Config: YOLO mode is implicit (skip that question), but ask granularity/VCS/agents FIRST (Step 2a)
 - After config: run Steps 6-9 automatically with smart defaults:
   - Research: Always yes
   - Requirements: Include all table stakes + features from provided document
@@ -50,13 +50,13 @@ INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init new-project)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
-Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `project_exists`, `has_codebase_map`, `planning_exists`, `has_existing_code`, `has_package_file`, `is_brownfield`, `needs_codebase_map`, `has_git`, `project_path`.
+Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `project_exists`, `has_codebase_map`, `planning_exists`, `has_existing_code`, `has_package_file`, `is_brownfield`, `needs_codebase_map`, `has_jj`, `project_path`.
 
 **If `project_exists` is true:** Error — project already initialized. Use `/gsd:progress`.
 
-**If `has_git` is false:** Initialize git:
+**If `has_jj` is false:** Initialize jj:
 ```bash
-git init
+jj git init
 ```
 
 ## 2. Brownfield Offer
@@ -110,8 +110,8 @@ AskUserQuestion([
     ]
   },
   {
-    header: "Git Tracking",
-    question: "Commit planning docs to git?",
+    header: "VCS Tracking",
+    question: "Commit planning docs?",
     multiSelect: false,
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
@@ -429,8 +429,8 @@ questions: [
     ]
   },
   {
-    header: "Git Tracking",
-    question: "Commit planning docs to git?",
+    header: "VCS Tracking",
+    question: "Commit planning docs?",
     multiSelect: false,
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
@@ -1119,7 +1119,7 @@ Exit skill and invoke SlashCommand("/gsd:discuss-phase 1 --auto")
 <success_criteria>
 
 - [ ] .planning/ directory created
-- [ ] Git repo initialized
+- [ ] jj repo initialized
 - [ ] Brownfield detection completed
 - [ ] Deep questioning completed (threads followed, not rushed)
 - [ ] PROJECT.md captures full context → **committed**

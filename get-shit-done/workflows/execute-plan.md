@@ -6,7 +6,7 @@ Execute a phase prompt (PLAN.md) and create the outcome summary (SUMMARY.md).
 Read STATE.md before any operation to load project context.
 Read config.json for planning behavior settings.
 
-@~/.claude/get-shit-done/references/git-integration.md
+@~/.claude/get-shit-done/references/jj-integration.md
 </required_reading>
 
 <process>
@@ -104,7 +104,7 @@ Pattern B only (verify-only checkpoints). Skip for A/C.
    - Main route: execute tasks using standard flow (step name="execute")
 3. After ALL segments: aggregate files/deviations/decisions → create SUMMARY.md → commit → self-check:
    - Verify key-files.created exist on disk with `[ -f ]`
-   - Check `git log --oneline --all --grep="{phase}-{plan}"` returns ≥1 commit
+   - Check `jj log --no-graph -r 'all() & description(glob:"*{phase}-{plan}*")'` returns ≥1 commit
    - Append `## Self-Check: PASSED` or `## Self-Check: FAILED` to SUMMARY
 
    **Known Claude Code bug (classifyHandoffIfNeeded):** If any segment agent reports "failed" with `classifyHandoffIfNeeded is not defined`, this is a Claude Code runtime bug — not a real failure. Run spot-checks; if they pass, treat as successful.
@@ -230,22 +230,15 @@ See `~/.claude/get-shit-done/references/tdd.md` for structure.
 </tdd_plan_execution>
 
 <precommit_failure_handling>
-## Pre-commit Hook Failure Handling
+## Pre-commit Validation
 
-Your commits may trigger pre-commit hooks. Auto-fix hooks handle themselves transparently — files get fixed and re-staged automatically.
+jj has no commit hooks. If the project uses linters or formatters, run them explicitly before committing if needed.
 
 **If running as a parallel executor agent (spawned by execute-phase):**
-Use `--no-verify` on all commits. Pre-commit hooks cause build lock contention when multiple agents commit simultaneously (e.g., cargo lock fights in Rust projects). The orchestrator validates once after all agents complete.
+No special flags needed — jj has no hooks. Commit normally.
 
 **If running as the sole executor (sequential mode):**
-If a commit is BLOCKED by a hook:
-
-1. The `git commit` command fails with hook error output
-2. Read the error — it tells you exactly which hook and what failed
-3. Fix the issue (type error, lint violation, secret leak, etc.)
-4. `git add` the fixed files
-5. Retry the commit
-6. Budget 1-2 retry cycles per commit
+If the project has linting/formatting requirements, run the relevant tools and fix any issues before committing.
 </precommit_failure_handling>
 
 <task_commit>
@@ -253,15 +246,9 @@ If a commit is BLOCKED by a hook:
 
 After each task (verification passed, done criteria met), commit immediately.
 
-**1. Check:** `git status --short`
+**1. Check:** `jj status`
 
-**2. Stage individually** (NEVER `git add .` or `git add -A`):
-```bash
-git add src/api/auth.ts
-git add src/types/user.ts
-```
-
-**3. Commit type:**
+**2. Commit type:**
 
 | Type | When | Example |
 |------|------|---------|
@@ -274,17 +261,17 @@ git add src/types/user.ts
 | `style` | Formatting | style(08-02): format auth module |
 | `chore` | Config/deps | chore(08-02): add bcrypt dependency |
 
-**4. Format:** `{type}({phase}-{plan}): {description}` with bullet points for key changes.
+**3. Format:** `{type}({phase}-{plan}): {description}` with bullet points for key changes.
 
-**5. Record hash:**
+**4. Record hash:**
 ```bash
-TASK_COMMIT=$(git rev-parse --short HEAD)
+TASK_COMMIT=$(jj log -r @- --no-graph -T 'change_id.short(8)')
 TASK_COMMITS+=("Task ${TASK_NUM}: ${TASK_COMMIT}")
 ```
 
-**6. Check for untracked generated files:**
+**5. Check for untracked generated files:**
 ```bash
-git status --short | grep '^??'
+jj status
 ```
 If new untracked files appeared after running scripts or tools, decide for each:
 - **Commit it** — if it's a source file, config, or intentional artifact
@@ -452,8 +439,8 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs({phase}-{plan}
 If .planning/codebase/ doesn't exist: skip.
 
 ```bash
-FIRST_TASK=$(git log --oneline --grep="feat({phase}-{plan}):" --grep="fix({phase}-{plan}):" --grep="test({phase}-{plan}):" --reverse | head -1 | cut -d' ' -f1)
-git diff --name-only ${FIRST_TASK}^..HEAD 2>/dev/null
+FIRST_TASK=$(jj log --no-graph -r 'all() & (description(glob:"*feat({phase}-{plan}):*") | description(glob:"*fix({phase}-{plan}):*") | description(glob:"*test({phase}-{plan}):*"))' -T 'change_id.short(8) ++ "\n"' | tail -1)
+jj diff --from ${FIRST_TASK} --to @ --summary 2>/dev/null
 ```
 
 Update only structural changes: new src/ dir → STRUCTURE.md | deps → STACK.md | file pattern → CONVENTIONS.md | API client → INTEGRATIONS.md | config → STACK.md | renamed → update paths. Skip code-only/bugfix/content changes.

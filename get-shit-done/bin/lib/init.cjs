@@ -4,7 +4,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, toPosixPath, output, error } = require('./core.cjs');
 
 function cmdInitExecutePhase(cwd, phase, raw) {
@@ -173,7 +172,7 @@ function cmdInitNewProject(cwd, raw) {
   let hasPackageFile = false;
   try {
     const codeExtensions = new Set(['.ts', '.js', '.py', '.go', '.rs', '.swift', '.java']);
-    const skipDirs = new Set(['node_modules', '.git', '.planning', '.claude', '__pycache__', 'target', 'dist', 'build']);
+    const skipDirs = new Set(['node_modules', '.jj', '.planning', '.claude', '__pycache__', 'target', 'dist', 'build']);
     function findCodeFiles(dir, depth) {
       if (depth > 3) return false;
       let entries;
@@ -215,8 +214,8 @@ function cmdInitNewProject(cwd, raw) {
     is_brownfield: hasCode || hasPackageFile,
     needs_codebase_map: (hasCode || hasPackageFile) && !pathExistsInternal(cwd, '.planning/codebase'),
 
-    // Git state
-    has_git: pathExistsInternal(cwd, '.git'),
+    // VCS state
+    has_jj: pathExistsInternal(cwd, '.jj'),
 
     // Enhanced search
     brave_search_available: hasBraveSearch,

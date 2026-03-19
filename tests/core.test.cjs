@@ -55,7 +55,7 @@ describe('loadConfig', () => {
   test('returns defaults when config.json is missing', () => {
     const config = loadConfig(tmpDir);
     assert.strictEqual(config.model_profile, 'balanced');
-    assert.strictEqual(config.commit_docs, true);
+    assert.strictEqual(config.commit_docs, false);
     assert.strictEqual(config.research, true);
     assert.strictEqual(config.plan_checker, true);
     assert.strictEqual(config.brave_search, false);
@@ -75,8 +75,8 @@ describe('loadConfig', () => {
     assert.strictEqual(config.commit_docs, false);
   });
 
-  test('reads branching_strategy from git section', () => {
-    writeConfig({ git: { branching_strategy: 'per-phase' } });
+  test('reads branching_strategy from jj section', () => {
+    writeConfig({ jj: { branching_strategy: 'per-phase' } });
     const config = loadConfig(tmpDir);
     assert.strictEqual(config.branching_strategy, 'per-phase');
   });
@@ -101,7 +101,7 @@ describe('loadConfig', () => {
     );
     const config = loadConfig(tmpDir);
     assert.strictEqual(config.model_profile, 'balanced');
-    assert.strictEqual(config.commit_docs, true);
+    assert.strictEqual(config.commit_docs, false);
   });
 
   test('handles parallelization as boolean', () => {

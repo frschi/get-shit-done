@@ -1,27 +1,27 @@
 <purpose>
-Create a clean branch for pull requests by filtering out .planning/ commits.
-The PR branch contains only code changes — reviewers don't see GSD artifacts
+Create a clean bookmark for pull requests by filtering out .planning/ changes.
+The PR bookmark contains only code changes — reviewers don't see GSD artifacts
 (PLAN.md, SUMMARY.md, STATE.md, CONTEXT.md, etc.).
 
-Uses git cherry-pick with path filtering to rebuild a clean history.
+Uses jj restore with path filtering to rebuild a clean history.
 </purpose>
 
 <process>
 
 <step name="detect_state">
-Parse `$ARGUMENTS` for target branch (default: `main`).
+Parse `$ARGUMENTS` for target bookmark (default: `main`).
 
 ```bash
-CURRENT_BRANCH=$(git branch --show-current)
+CURRENT_BOOKMARK=$(jj log -r @ --no-graph -T 'bookmarks')
 TARGET=${1:-main}
 ```
 
 Check preconditions:
-- Must be on a feature branch (not main/master)
+- Must be on a feature bookmark (not main/master)
 - Must have commits ahead of target
 
 ```bash
-AHEAD=$(git rev-list --count "$TARGET".."$CURRENT_BRANCH" 2>/dev/null)
+AHEAD=$(jj log -r 'TARGET..@' --no-graph | wc -l)
 if [ "$AHEAD" = "0" ]; then
   echo "No commits ahead of $TARGET — nothing to filter."
   exit 0
@@ -34,7 +34,7 @@ Display:
  GSD ► PR BRANCH
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Branch: {CURRENT_BRANCH}
+Bookmark: {CURRENT_BOOKMARK}
 Target: {TARGET}
 Commits: {AHEAD} ahead
 ```
@@ -45,14 +45,14 @@ Classify commits:
 
 ```bash
 # Get all commits ahead of target
-git log --oneline "$TARGET".."$CURRENT_BRANCH" --no-merges
+jj log -r 'TARGET..@' --no-graph
 ```
 
 For each commit, check if it ONLY touches .planning/ files:
 
 ```bash
 # For each commit hash
-FILES=$(git diff-tree --no-commit-id --name-only -r $HASH)
+FILES=$(jj diff -r $HASH --summary)
 ALL_PLANNING=$(echo "$FILES" | grep -v "^\.planning/" | wc -l)
 ```
 
@@ -71,47 +71,49 @@ Mixed commits: {N} (code + planning — included)
 
 <step name="create_pr_branch">
 ```bash
-PR_BRANCH="${CURRENT_BRANCH}-pr"
+PR_BRANCH="${CURRENT_BOOKMARK}-pr"
 
-# Create PR branch from target
-git checkout -b "$PR_BRANCH" "$TARGET"
+# Create PR bookmark from target
+jj new "$TARGET"
+jj bookmark create "$PR_BRANCH" -r @
 ```
 
-Cherry-pick only code commits (in order):
+Restore only code commits (in order):
 
 ```bash
 for HASH in $CODE_COMMITS; do
-  git cherry-pick "$HASH" --no-commit
+  jj new @
+  jj restore --from "$HASH"
   # Remove any .planning/ files that came along in mixed commits
-  git rm -r --cached .planning/ 2>/dev/null || true
-  git commit -C "$HASH"
+  rm -rf .planning/ 2>/dev/null || true
+  jj describe -m "$(jj log -r $HASH --no-graph -T description)"
 done
 ```
 
-Return to original branch:
+Return to original bookmark:
 ```bash
-git checkout "$CURRENT_BRANCH"
+jj new "$CURRENT_BOOKMARK"
 ```
 </step>
 
 <step name="verify">
 ```bash
-# Verify no .planning/ files in PR branch
-PLANNING_FILES=$(git diff --name-only "$TARGET".."$PR_BRANCH" | grep "^\.planning/" | wc -l)
-TOTAL_FILES=$(git diff --name-only "$TARGET".."$PR_BRANCH" | wc -l)
-PR_COMMITS=$(git rev-list --count "$TARGET".."$PR_BRANCH")
+# Verify no .planning/ files in PR bookmark diff
+PLANNING_FILES=$(jj diff --from "$TARGET" --to "$PR_BRANCH" --summary | grep "^\.planning/" | wc -l)
+TOTAL_FILES=$(jj diff --from "$TARGET" --to "$PR_BRANCH" --summary | wc -l)
+PR_COMMITS=$(jj log -r 'TARGET..PR_BRANCH' --no-graph | wc -l)
 ```
 
 Display results:
 ```
-✅ PR branch created: {PR_BRANCH}
+PR bookmark created: {PR_BRANCH}
 
 Original: {AHEAD} commits, {ORIGINAL_FILES} files
-PR branch: {PR_COMMITS} commits, {TOTAL_FILES} files
+PR bookmark: {PR_COMMITS} commits, {TOTAL_FILES} files
 Planning files: {PLANNING_FILES} (should be 0)
 
 Next steps:
-  git push origin {PR_BRANCH}
+  jj git push --bookmark {PR_BRANCH}
   gh pr create --base {TARGET} --head {PR_BRANCH}
 
 Or use /gsd:ship to create the PR automatically.
@@ -121,9 +123,10 @@ Or use /gsd:ship to create the PR automatically.
 </process>
 
 <success_criteria>
-- [ ] PR branch created from target
+- [ ] PR bookmark created from target
 - [ ] Planning-only commits excluded
-- [ ] No .planning/ files in PR branch diff
+- [ ] No .planning/ files in PR bookmark diff
 - [ ] Commit messages preserved from original
 - [ ] User shown next steps
 </success_criteria>
+</output>

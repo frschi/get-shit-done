@@ -55,8 +55,7 @@ Do the work directly:
 Commit the change atomically:
 
 ```bash
-git add -A
-git commit -m "fix: {concise description of what changed}"
+jj commit -m "fix: {concise description of what changed}"
 ```
 
 Use conventional commit format: `fix:`, `feat:`, `docs:`, `chore:`, `refactor:` as appropriate.
@@ -99,7 +98,7 @@ No next-step suggestions. No workflow routing. Just done.
 
 <success_criteria>
 - [ ] Task completed in current context (no subagents)
-- [ ] Atomic git commit with conventional message
+- [ ] Atomic commit with conventional message
 - [ ] STATE.md updated if it exists
 - [ ] Total operation under 2 minutes wall time
 </success_criteria>

@@ -105,7 +105,7 @@ grep -r "import.*stripe\|import.*supabase\|import.*aws\|import.*@" src/ --includ
 **For arch focus:**
 ```bash
 # Directory structure
-find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' | head -50
+find . -type d -not -path '*/node_modules/*' -not -path '*/.jj/*' | head -50
 
 # Entry points
 ls src/index.* src/main.* src/app.* src/server.* app/page.* 2>/dev/null
@@ -741,7 +741,7 @@ Ready for orchestrator summary.
 - NEVER quote their contents, even partially
 - NEVER include values like `API_KEY=...` or `sk-...` in any output
 
-**Why this matters:** Your output gets committed to git. Leaked secrets = security incident.
+**Why this matters:** Your output gets committed. Leaked secrets = security incident.
 </forbidden_files>
 
 <critical_rules>
@@ -756,7 +756,7 @@ Ready for orchestrator summary.
 
 **RETURN ONLY CONFIRMATION.** Your response should be ~10 lines max. Just confirm what was written.
 
-**DO NOT COMMIT.** The orchestrator handles git operations.
+**DO NOT COMMIT.** The orchestrator handles VCS operations.
 
 </critical_rules>
 

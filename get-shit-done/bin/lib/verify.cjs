@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, output, error } = require('./core.cjs');
+const { safeReadFile, normalizePhaseName, execJJ, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, output, error } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
 const { writeStateMd } = require('./state.cjs');
 
@@ -62,13 +62,14 @@ function cmdVerifySummary(cwd, summaryPath, checkFileCount, raw) {
   }
 
   // Check 3: Commits exist
-  const commitHashPattern = /\b[0-9a-f]{7,40}\b/g;
+  // Match both jj change IDs (lowercase letters) and commit IDs (hex)
+  const commitHashPattern = /\b(?:[0-9a-f]{7,40}|[a-z]{7,40})\b/g;
   const hashes = content.match(commitHashPattern) || [];
   let commitsExist = false;
   if (hashes.length > 0) {
     for (const hash of hashes.slice(0, 3)) {
-      const result = execGit(cwd, ['cat-file', '-t', hash]);
-      if (result.exitCode === 0 && result.stdout === 'commit') {
+      const result = execJJ(cwd, ['log', '-r', hash, '--no-graph', '-T', 'change_id']);
+      if (result.exitCode === 0) {
         commitsExist = true;
         break;
       }
@@ -90,7 +91,7 @@ function cmdVerifySummary(cwd, summaryPath, checkFileCount, raw) {
   }
 
   if (missing.length > 0) errors.push('Missing files: ' + missing.join(', '));
-  if (!commitsExist && hashes.length > 0) errors.push('Referenced commit hashes not found in git history');
+  if (!commitsExist && hashes.length > 0) errors.push('Referenced commit hashes not found in VCS history');
   if (selfCheck === 'failed') errors.push('Self-check section indicates failure');
 
   const checks = {
@@ -264,8 +265,8 @@ function cmdVerifyCommits(cwd, hashes, raw) {
   const valid = [];
   const invalid = [];
   for (const hash of hashes) {
-    const result = execGit(cwd, ['cat-file', '-t', hash]);
-    if (result.exitCode === 0 && result.stdout.trim() === 'commit') {
+    const result = execJJ(cwd, ['log', '-r', hash, '--no-graph', '-T', 'change_id']);
+    if (result.exitCode === 0) {
       valid.push(hash);
     } else {
       invalid.push(hash);
@@ -741,7 +742,7 @@ function cmdValidateHealth(cwd, options, raw) {
           case 'resetConfig': {
             const defaults = {
               model_profile: 'balanced',
-              commit_docs: true,
+              commit_docs: false,
               search_gitignored: false,
               branching_strategy: 'none',
               phase_branch_template: 'gsd/phase-{phase}-{slug}',

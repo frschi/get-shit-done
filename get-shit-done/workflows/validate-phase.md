@@ -125,8 +125,7 @@ Handle return:
 ## 7. Commit
 
 ```bash
-git add {test_files}
-git commit -m "test(phase-${PHASE}): add Nyquist validation tests"
+jj commit -m "test(phase-${PHASE}): add Nyquist validation tests"
 
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(phase-${PHASE}): add/update validation strategy"
 ```

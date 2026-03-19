@@ -154,7 +154,7 @@ Re-run `init todos` to get updated count, then update STATE.md "### Pending Todo
 If todo was moved to done/, commit the change:
 
 ```bash
-git rm --cached .planning/todos/pending/[filename] 2>/dev/null || true
+rm .planning/todos/pending/[filename] 2>/dev/null || true
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: start work on todo - [title]" --files .planning/todos/done/[filename] .planning/STATE.md
 ```
 
@@ -173,5 +173,5 @@ Confirm: "Committed: docs: start work on todo - [title]"
 - [ ] Appropriate actions offered
 - [ ] Selected action executed
 - [ ] STATE.md updated if todo count changed
-- [ ] Changes committed to git (if todo moved to done/)
+- [ ] Changes committed (if todo moved to done/)
 </success_criteria>

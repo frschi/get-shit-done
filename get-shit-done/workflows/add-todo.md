@@ -154,5 +154,5 @@ Would you like to:
 - [ ] No duplicates (checked and resolved)
 - [ ] Area consistent with existing todos
 - [ ] STATE.md updated if exists
-- [ ] Todo and state committed to git
+- [ ] Todo and state committed
 </success_criteria>

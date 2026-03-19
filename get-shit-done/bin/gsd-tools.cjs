@@ -4,7 +4,7 @@
  * GSD Tools — CLI utility for GSD workflow operations
  *
  * Replaces repetitive inline bash patterns across ~50 GSD command/workflow/agent files.
- * Centralizes: config parsing, model resolution, phase lookup, git commits, summary verification.
+ * Centralizes: config parsing, model resolution, phase lookup, jj commits, summary verification.
  *
  * Usage: node gsd-tools.cjs <command> [args] [--raw]
  *

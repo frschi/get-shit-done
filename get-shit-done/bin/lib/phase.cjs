@@ -336,7 +336,7 @@ function cmdPhaseAdd(cwd, description, raw) {
   const dirName = `${paddedNum}-${slug}`;
   const dirPath = path.join(cwd, '.planning', 'phases', dirName);
 
-  // Create directory with .gitkeep so git tracks empty folders
+  // Create directory with .gitkeep so VCS tracks empty folders
   fs.mkdirSync(dirPath, { recursive: true });
   fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
 
@@ -408,7 +408,7 @@ function cmdPhaseInsert(cwd, afterPhase, description, raw) {
   const dirName = `${decimalPhase}-${slug}`;
   const dirPath = path.join(cwd, '.planning', 'phases', dirName);
 
-  // Create directory with .gitkeep so git tracks empty folders
+  // Create directory with .gitkeep so VCS tracks empty folders
   fs.mkdirSync(dirPath, { recursive: true });
   fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
 
